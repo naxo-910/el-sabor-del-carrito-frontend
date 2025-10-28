@@ -18,6 +18,14 @@ const ProductDetailPage = ({ onAddToCart }) => {
     const formattedPrice = product.price.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
     const isAvailable = product.stock > 0;
 
+    // --- FUNCIÓN CORREGIDA ---
+    const handleAddToCart = () => {
+        // Ejecutamos onAddToCart solo si hay stock disponible
+        if (isAvailable) {
+            onAddToCart(product);
+        }
+    };
+
     return (
         <div className="container my-5">
             
@@ -55,14 +63,14 @@ const ProductDetailPage = ({ onAddToCart }) => {
                     
                     <hr />
                     
-                    {/* Botón de Añadir al Carrito */}
+                    {/* Botón de Añadir al Carrito (usa la función corregida) */}
                     <button 
                         className="btn btn-lg btn-warning mt-3 w-100" 
-                        onClick={() => onAddToCart(product)} 
-                        disabled={!isAvailable}
+                        onClick={handleAddToCart} // Llama a la función que tiene la verificación interna
+                        disabled={!isAvailable} // Deshabilita visualmente si no hay stock
                     >
                         <FaShoppingCart className="me-2" /> 
-                        {isAvailable ? 'Añadir al Carrito' : 'Sin Stock'}
+                        {isAvailable ? 'Añadir al Carrito' : 'Agotado'}
                     </button>
                 </div>
             </div>

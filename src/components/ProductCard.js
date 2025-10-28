@@ -1,31 +1,22 @@
 // src/components/ProductCard.js
 import React from 'react';
 import { Card, Button } from 'react-bootstrap';
-// 1. Importar 'Link' para la navegación
 import { Link } from 'react-router-dom';
 
-/**
- * Componente que muestra la tarjeta de un producto.
- * @param {object} props
- * @param {object} props.product - El objeto producto a mostrar.
- * @param {function} props.onAddToCart - Función para añadir el producto al carrito.
- */
 const ProductCard = ({ product, onAddToCart }) => {
 
-    // Formateo del precio a moneda local (Chile: CLP)
     const formattedPrice = product.price.toLocaleString('es-CL', {
         style: 'currency',
         currency: 'CLP',
         minimumFractionDigits: 0
     });
 
-    // 2. Ruta de detalle corregida a PLURAL
     const detailUrl = `/products/${product.id}`;
+    const isAvailable = product.stock > 0; // Verifica stock
 
     return (
         <Card className="shadow-lg border-0 h-100 d-flex flex-column transition duration-300 hover:scale-[1.02] hover:shadow-xl rounded-xl">
             
-            {/* 3. Imagen envuelta en Link (con la ruta corregida) */}
             <Link to={detailUrl}>
                 <Card.Img 
                     variant="top" 
@@ -41,7 +32,6 @@ const ProductCard = ({ product, onAddToCart }) => {
             
             <Card.Body className="d-flex flex-column p-3">
                 
-                {/* 4. Título envuelto en Link (con la ruta corregida) */}
                 <Card.Title className="text-xl font-bold mb-1 text-gray-800">
                     <Link to={detailUrl} className="text-dark text-decoration-none">
                         {product.name}
@@ -52,27 +42,27 @@ const ProductCard = ({ product, onAddToCart }) => {
                     <span className="badge bg-danger text-uppercase mb-2 self-start">Oferta!</span>
                 )}
                 
-                {/* Descripción y Categoría */}
-                <Card.Text className="text-sm text-gray-600 flex-grow-1">
+                {/* Solución al Error de Hidratación */}
+                <Card.Text as="div" className="text-sm text-gray-600 flex-grow-1"> 
                     <small className="text-muted">{product.category}</small>
                     <div className="mt-1 line-clamp-2">{product.description}</div>
                 </Card.Text>
 
-                {/* Precio */}
                 <h5 className="my-2 font-extrabold text-2xl text-primary-500">{formattedPrice}</h5>
                 
                 {/* Botones de Acción */}
                 <div className="d-grid gap-2 mt-2">
                     <Button 
                         variant="primary" 
-                        onClick={() => onAddToCart(product, 1)}
+                        // --- ¡ESTA ES LA LÓGICA DE PROTECCIÓN! ---
+                        // Solo llama a onAddToCart si isAvailable es TRUE
+                        onClick={() => { if (isAvailable) onAddToCart(product, 1); }}
                         className="btn-block rounded-lg shadow-md font-semibold"
-                        disabled={product.stock === 0} // Añadido: Deshabilitar si no hay stock
+                        disabled={!isAvailable} // Deshabilita visualmente
                     >
-                        {product.stock > 0 ? 'Añadir al Carrito' : 'Agotado'}
+                        {isAvailable ? 'Añadir al Carrito' : 'Agotado'}
                     </Button>
                     
-                    {/* 5. Botón 'Ver Detalle' usa 'Link' (con la ruta corregida) */}
                     <Button 
                         as={Link} 
                         to={detailUrl}

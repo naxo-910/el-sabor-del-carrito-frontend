@@ -2,8 +2,71 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCreditCard, FaMapMarkerAlt, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
+import * as DataService from '../data/DataService'; // Importar el DataService
 
-// Componente CheckoutPage que recibe el carrito, total y funciones de App.js
+// Función auxiliar para obtener el stock actual de un producto desde la fuente global
+const getRealStock = (productId) => {
+    const product = DataService.getProductById(productId);
+    return product ? product.stock : 0;
+};
+
+
+// --- Componente de Fila del Carrito (CON VERIFICACIÓN DE STOCK) ---
+const CartItemRow = ({ item, updateQuantity, removeItem }) => {
+    
+    // Obtenemos el stock real del producto desde la fuente de datos
+    const realStock = getRealStock(item.product.id); 
+    const canIncrease = item.quantity < realStock;
+    const isAvailable = realStock > 0;
+
+    // Si el producto está agotado Y la cantidad actual es mayor que el stock real (0), 
+    // deberíamos forzar una actualización a 0 (o dejarlo en el carrito, pero deshabilitado).
+    // Para simplificar, deshabilitamos el botón de aumentar si el stock es 0.
+    
+    return (
+        <li key={item.product.id} className="list-group-item d-flex justify-content-between lh-sm align-items-center">
+            <div>
+                <h6 className="my-0">{item.product.name}</h6>
+                <small className="text-muted d-flex align-items-center">
+                    Cantidad:
+                    {/* Botón para restar */}
+                    <button
+                        className="btn btn-sm btn-outline-secondary ms-2 me-1 py-0 px-2"
+                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                        disabled={item.quantity <= 1} 
+                    >
+                        <FaMinus size={10} />
+                    </button>
+                    {item.quantity}
+                    {/* Botón para sumar - Deshabilitado si la cantidad actual iguala el stock real */}
+                    <button
+                        className="btn btn-sm btn-outline-secondary ms-1 me-2 py-0 px-2"
+                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                        disabled={!canIncrease} // Deshabilitado si ya alcanzó el stock real
+                    >
+                        <FaPlus size={10} />
+                    </button>
+                    {!isAvailable && <span className="text-danger small">(Agotado)</span>}
+                </small>
+            </div>
+            <div className="d-flex align-items-center">
+                <span className="text-muted me-3">
+                    ${(item.product.price * item.quantity).toLocaleString('es-CL')}
+                </span>
+                {/* Botón para eliminar */}
+                <button
+                    className="btn btn-sm btn-outline-danger py-0 px-2"
+                    onClick={() => removeItem(item.product.id)}
+                    title="Eliminar del carrito"
+                >
+                    <FaTrash size={12} />
+                </button>
+            </div>
+        </li>
+    );
+};
+
+// --- Componente CheckoutPage ---
 const CheckoutPage = ({ cart, total, onCheckoutComplete, updateQuantity, removeItem }) => {
     const navigate = useNavigate();
 
@@ -17,7 +80,7 @@ const CheckoutPage = ({ cart, total, onCheckoutComplete, updateQuantity, removeI
         cvv: ''
     });
 
-    // Validaciones simples (solo verifica que no estén vacíos y el formato básico)
+    // Validaciones simples
     const isFormValid = formData.nombre && formData.email && formData.direccion && formData.comuna && /^\d{16}$/.test(formData.tarjeta) && /^\d{3}$/.test(formData.cvv);
 
     // Maneja el envío del formulario
@@ -26,17 +89,27 @@ const CheckoutPage = ({ cart, total, onCheckoutComplete, updateQuantity, removeI
 
         if (cart.length === 0) {
             alert("El carrito está vacío.");
-            navigate('/products'); // Cambiado a /products para coherencia
+            navigate('/products');
             return;
         }
+        
+        // --- VERIFICACIÓN ADICIONAL DE STOCK ANTES DE PAGAR ---
+        const outOfStockItems = cart.filter(item => item.quantity > getRealStock(item.product.id));
+
+        if (outOfStockItems.length > 0) {
+            alert(`No se puede completar la compra. El stock de ${outOfStockItems.map(i => i.product.name).join(', ')} ha cambiado y no está disponible en las cantidades solicitadas.`);
+            // No hacemos nada, forzando al usuario a arreglar las cantidades en el checkout
+            return;
+        }
+        
+        // --- FIN DE VERIFICACIÓN ---
 
         if (isFormValid) {
             // 💡 Simulación de Lógica de Pago
             const paymentSuccessful = Math.random() < 0.8; // 80% de éxito
 
             if (paymentSuccessful) {
-                onCheckoutComplete(); // Llama a la función que vacía el carrito en App.js
-                // navigate('/success') // La redirección ya se hace en App.js al vaciar el carrito
+                onCheckoutComplete(); 
             } else {
                 navigate('/error');
             }
@@ -68,43 +141,14 @@ const CheckoutPage = ({ cart, total, onCheckoutComplete, updateQuantity, removeI
                                 <span className="badge bg-primary rounded-pill">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                             </h4>
                             <ul className="list-group mb-3">
+                                {/* Usa el componente CartItemRow con la lógica de stock */}
                                 {cart.map(item => (
-                                    <li key={item.product.id} className="list-group-item d-flex justify-content-between lh-sm align-items-center">
-                                        <div>
-                                            <h6 className="my-0">{item.product.name}</h6>
-                                            <small className="text-muted d-flex align-items-center">
-                                                Cantidad:
-                                                {/* Botones para ajustar cantidad */}
-                                                <button
-                                                    className="btn btn-sm btn-outline-secondary ms-2 me-1 py-0 px-2"
-                                                    onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                                    disabled={item.quantity <= 1} // Deshabilita si es 1
-                                                >
-                                                    <FaMinus size={10} />
-                                                </button>
-                                                {item.quantity}
-                                                <button
-                                                    className="btn btn-sm btn-outline-secondary ms-1 me-2 py-0 px-2"
-                                                    onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                                >
-                                                    <FaPlus size={10} />
-                                                </button>
-                                            </small>
-                                        </div>
-                                        <div className="d-flex align-items-center">
-                                            <span className="text-muted me-3">
-                                                ${(item.product.price * item.quantity).toLocaleString('es-CL')}
-                                            </span>
-                                            {/* Botón para eliminar */}
-                                            <button
-                                                className="btn btn-sm btn-outline-danger py-0 px-2"
-                                                onClick={() => removeItem(item.product.id)}
-                                                title="Eliminar del carrito"
-                                            >
-                                                <FaTrash size={12} />
-                                            </button>
-                                        </div>
-                                    </li>
+                                    <CartItemRow 
+                                        key={item.product.id} 
+                                        item={item} 
+                                        updateQuantity={updateQuantity} 
+                                        removeItem={removeItem} 
+                                    />
                                 ))}
                                 <li className="list-group-item d-flex justify-content-between">
                                     <span>Total (CLP)</span>
@@ -117,7 +161,7 @@ const CheckoutPage = ({ cart, total, onCheckoutComplete, updateQuantity, removeI
                     {/* Formulario de Checkout (Columna Derecha) */}
                     <div className="col-lg-5 order-lg-1">
                         <form onSubmit={handleSubmit}>
-                            {/* Sección 1: Datos de Envío */}
+                            {/* ... (Resto del formulario de envío y pago) ... */}
                             <h4 className="mb-3"><FaMapMarkerAlt className="me-2" /> Información de Envío</h4>
                             <div className="row g-3">
                                 <div className="col-12">
@@ -146,7 +190,6 @@ const CheckoutPage = ({ cart, total, onCheckoutComplete, updateQuantity, removeI
 
                             <hr className="my-4" />
 
-                            {/* Sección 2: Pago Simulado */}
                             <h4 className="mb-3"><FaCreditCard className="me-2" /> Pago Simulado</h4>
                             <div className="row g-3 mb-4">
                                 <div className="col-md-7">
@@ -171,4 +214,3 @@ const CheckoutPage = ({ cart, total, onCheckoutComplete, updateQuantity, removeI
 };
 
 export default CheckoutPage;
-
