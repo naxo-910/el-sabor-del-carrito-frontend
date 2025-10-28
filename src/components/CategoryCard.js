@@ -1,91 +1,64 @@
-// src/components/ProductCard.js
 import React from 'react';
-import { Card, Button } from 'react-bootstrap';
+import { Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
 /**
- * Componente que muestra la tarjeta de un producto.
+ * Componente que muestra una tarjeta individual de categoría.
+ * Recibe el nombre de la categoría y la URL de la imagen principal.
  */
-const ProductCard = ({ product, onAddToCart }) => {
+const CategoryCard = ({ categoryName, imageUrl }) => {
+    
+    // Ruta a la página de detalle de la categoría
+    const detailUrl = `/category/${categoryName}`;
 
-    const formattedPrice = product.price.toLocaleString('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        minimumFractionDigits: 0
-    });
-
-    const detailUrl = `/products/${product.id}`;
-    const isAvailable = product.stock > 0; // Verifica stock
-
-    // --- FUNCIÓN DE PROTECCIÓN LÓGICA (SOLUCIÓN) ---
-    // Esta función verifica el stock antes de llamar a la función principal de App.js
-    const handleAddToCart = () => {
-        if (isAvailable) {
-            onAddToCart(product, 1);
-        }
+    // Estilo para asegurar que el texto se lea sobre la imagen
+    const overlayStyle = {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.4)', // Fondo oscuro semitransparente
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+        transition: 'background-color 0.3s'
     };
-    // ------------------------------------
+    
+    // Placeholder para la imagen
+    const handleImageError = (e) => {
+        e.target.onerror = null;
+        e.target.src = "https://placehold.co/600x400/333333/FFFFFF?text=Sin+Imagen";
+    };
 
     return (
-        <Card className="shadow-lg border-0 h-100 d-flex flex-column transition duration-300 hover:scale-[1.02] hover:shadow-xl rounded-xl">
-            
-            <Link to={detailUrl}>
-                <Card.Img 
-                    variant="top" 
-                    src={product.imageUrl} 
-                    alt={product.name} 
-                    className="rounded-t-xl object-cover h-48 w-full"
-                    onError={(e) => { 
-                        e.target.onerror = null; 
-                        e.target.src = "https://placehold.co/600x400/CCCCCC/333333?text=Sin+Imagen"; 
-                    }}
-                />
+        <div className="category-card-container">
+            <Link to={detailUrl} className="text-decoration-none">
+                <Card className="text-white text-center border-0 shadow-lg rounded-xl overflow-hidden cursor-pointer transition duration-300 hover:scale-[1.03] hover:shadow-2xl">
+                    <div style={{ position: 'relative' }}>
+                        
+                        {/* Imagen de Fondo */}
+                        <Card.Img
+                            variant="top"
+                            src={imageUrl}
+                            alt={`Categoría ${categoryName}`}
+                            onError={handleImageError}
+                            className="object-cover w-full h-64 md:h-80 transition duration-300 transform hover:brightness-110"
+                            style={{ height: '300px' }}
+                        />
+                        
+                        {/* Overlay Oscuro con Título (asegura legibilidad) */}
+                        <div style={overlayStyle}>
+                            <Card.Title className="text-3xl font-extrabold text-white uppercase tracking-wider z-20 p-2 transform transition duration-300 hover:scale-105">
+                                {categoryName}
+                            </Card.Title>
+                        </div>
+                    </div>
+                </Card>
             </Link>
-            
-            <Card.Body className="d-flex flex-column p-3">
-                
-                <Card.Title className="text-xl font-bold mb-1 text-gray-800">
-                    <Link to={detailUrl} className="text-dark text-decoration-none">
-                        {product.name}
-                    </Link>
-                </Card.Title>
-                
-                {product.isOffer && (
-                    <span className="badge bg-danger text-uppercase mb-2 self-start">Oferta!</span>
-                )}
-                
-                {/* CORRECCIÓN DE HYDRATION ERROR: as="div" */}
-                <Card.Text as="div" className="text-sm text-gray-600 flex-grow-1"> 
-                    <small className="text-muted">{product.category}</small>
-                    <div className="mt-1 line-clamp-2">{product.description}</div>
-                </Card.Text>
-
-                {/* Precio */}
-                <h5 className="my-2 font-extrabold text-2xl text-primary-500">{formattedPrice}</h5>
-                
-                {/* Botones de Acción */}
-                <div className="d-grid gap-2 mt-2">
-                    <Button 
-                        variant="primary" 
-                        onClick={handleAddToCart} // <-- ¡USA LA FUNCIÓN PROTEGIDA!
-                        className="btn-block rounded-lg shadow-md font-semibold"
-                        disabled={!isAvailable} // Deshabilita visualmente
-                    >
-                        {isAvailable ? 'Añadir al Carrito' : 'Agotado'}
-                    </Button>
-                    
-                    <Button 
-                        as={Link} 
-                        to={detailUrl}
-                        variant="outline-secondary" 
-                        className="btn-block rounded-lg"
-                    >
-                        Ver Detalle
-                    </Button>
-                </div>
-            </Card.Body>
-        </Card>
+        </div>
     );
 };
 
-export default ProductCard;
+export default CategoryCard;

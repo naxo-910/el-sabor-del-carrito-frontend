@@ -73,7 +73,7 @@ let products = [
         isOffer: false,
         description: "La favorita para los amantes del queso. Cremosa y muy sabrosa."
     },
-    // Productos adicionales (Asegúrate de tener las imágenes en public/images/...)
+    // Productos adicionales
     {
         id: 8,
         name: "Empanada Napolitana",
@@ -116,23 +116,30 @@ let products = [
     },
 ];
 
-// --- FUNCIONES DE LECTURA (READ) ---
-export const getProducts = () => [...products];
-export const getProductById = (id) => products.find(p => p.id === parseInt(id));
-export const getOfferProducts = () => products.filter(p => p.isOffer);
-export const getCategories = () => Array.from(new Set(products.map(p => p.category)));
+// --- FUNCIONES DE LECTURA (READ) - ¡CON VERIFICACIÓN DE SEGURIDAD! ---
+const safeProducts = () => Array.isArray(products) ? products : [];
+
+export const getProducts = () => [...safeProducts()];
+
+export const getProductById = (id) => safeProducts().find(p => p.id === parseInt(id));
+
+export const getOfferProducts = () => safeProducts().filter(p => p.isOffer);
+
+// ¡FUNCIÓN CRÍTICA CORREGIDA! Asegura que p.category exista antes de mapear.
+export const getCategories = () => Array.from(new Set(safeProducts().map(p => p.category).filter(c => c)));
+
 export const getProductsByCategory = (categoryName) =>
-    products.filter(p => p.category.toLowerCase() === categoryName.toLowerCase());
+    safeProducts().filter(p => p.category && p.category.toLowerCase() === categoryName.toLowerCase());
 
 // --- FUNCIONES CRUD (ADMIN) ---
 export const addProduct = (newProduct) => {
-    const id = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+    const id = safeProducts().length > 0 ? Math.max(...safeProducts().map(p => p.id)) + 1 : 1;
     const productWithId = { ...newProduct, id, stock: parseInt(newProduct.stock) || 0, price: parseFloat(newProduct.price) || 0 };
     products.push(productWithId);
     return productWithId;
 };
 export const updateProduct = (updatedProduct) => {
-    const index = products.findIndex(p => p.id === parseInt(updatedProduct.id));
+    const index = safeProducts().findIndex(p => p.id === parseInt(updatedProduct.id));
     if (index !== -1) {
         products[index] = { ...products[index], ...updatedProduct, stock: parseInt(updatedProduct.stock) || 0, price: parseFloat(updatedProduct.price) || 0 };
         return products[index];
@@ -140,10 +147,9 @@ export const updateProduct = (updatedProduct) => {
     return null;
 };
 export const deleteProduct = (id) => {
-    const initialLength = products.length;
-    products = products.filter(p => p.id !== parseInt(id));
+    const initialLength = safeProducts().length;
+    products = safeProducts().filter(p => p.id !== parseInt(id));
     return products.length < initialLength;
 };
 
 export { products };
-

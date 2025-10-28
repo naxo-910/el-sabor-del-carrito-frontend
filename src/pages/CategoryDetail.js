@@ -1,34 +1,45 @@
-// src/pages/CategoryDetail.js
-import React from 'react';
+import React, { useMemo } from 'react'; // Importamos useMemo para eficiencia
 import { useParams, Link } from 'react-router-dom';
-// 1. Importamos la función para OBTENER productos por categoría
-import { getProductsByCategory } from '../data/DataService'; 
-// 2. Importamos la TARJETA de producto para reusarla
+import * as DataService from '../data/DataService'; // Usamos el alias para consistencia
 import ProductCard from '../components/ProductCard'; 
 import { FaArrowLeft } from 'react-icons/fa';
 
-// 3. Recibe 'onAddToCart' como prop desde App.js
+/**
+ * Componente de página que muestra todos los productos de una categoría específica.
+ * Recibe 'onAddToCart' (función de App.js) para añadir productos al carrito.
+ */
 const CategoryDetailPage = ({ onAddToCart }) => {
     
-    // 4. Lee el nombre de la categoría de la URL (ej: "Sushi")
+    // Obtener el parámetro 'name' de la URL (ej: /category/Empanadas)
     const { name } = useParams(); 
+    
+    // Aseguramos que el nombre de la categoría sea legible y correcto
+    const categoryName = name ? decodeURIComponent(name.replace(/%20/g, ' ')) : 'Sin Categoría';
+    
+    // Usamos useMemo para filtrar productos solo cuando la categoría cambie
+    const products = useMemo(() => {
+        if (!name) return [];
+        // Llama a la función del DataService para obtener los productos filtrados
+        return DataService.getProductsByCategory(categoryName);
+    }, [categoryName]);
 
-    // 5. Obtiene solo los productos de esa categoría
-    const products = getProductsByCategory(name);
-
-    // 6. Manejo de error si la categoría no existe o no tiene productos
+    // Renderizado condicional si no se encuentran productos
     if (!products || products.length === 0) {
         return (
-            <div className="container text-center my-5">
-                <h2>No se encontraron productos en la categoría "{name}".</h2>
+            <div className="container text-center my-5 py-5">
+                <h1 className="display-5 mb-4">Categoría: {categoryName}</h1>
+                <div className="alert alert-warning" role="alert">
+                    <h4 className="alert-heading">Lo sentimos</h4>
+                    No se encontraron productos disponibles en la categoría **"{categoryName}"**.
+                </div>
                 <Link to="/categories" className="btn btn-primary mt-3">
-                    Volver a Categorías
+                    <FaArrowLeft className="me-2" /> Volver a Categorías
                 </Link>
             </div>
         );
     }
 
-    // 7. Si todo está bien, muestra la cuadrícula de productos
+    // Renderizado principal
     return (
         <section className="container my-5">
             <Link to="/categories" className="btn btn-outline-secondary mb-4">
@@ -36,15 +47,21 @@ const CategoryDetailPage = ({ onAddToCart }) => {
                 Volver a Categorías
             </Link>
             
-            <h1 className="mb-4">Mostrando: {name}</h1>
+            <h1 className="mb-4 display-5 fw-bold text-gray-800 border-bottom pb-2">
+                Mostrando: {categoryName}
+                <small className="text-muted fs-6 ms-3">({products.length} Productos)</small>
+            </h1>
             
-            <div className="row">
+            <div className="row g-4">
                 {products.map(product => (
-                    <ProductCard 
-                        key={product.id} 
-                        product={product}
-                        onAddToCart={onAddToCart} // ¡Pasamos la función del carrito!
-                    />
+                    // Aseguramos que el layout use las columnas de Bootstrap
+                    <div key={product.id} className="col-12 col-sm-6 col-md-4 col-lg-3">
+                        {/* El componente ProductCard ya tiene la protección interna para 'null' */}
+                        <ProductCard 
+                            product={product}
+                            onAddToCart={onAddToCart}
+                        />
+                    </div>
                 ))}
             </div>
         </section>

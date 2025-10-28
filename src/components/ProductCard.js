@@ -5,6 +5,11 @@ import { Link } from 'react-router-dom';
 
 const ProductCard = ({ product, onAddToCart }) => {
 
+    // --- ¡VERIFICACIÓN DE SEGURIDAD CRÍTICA! ---
+    // Si el producto no es un objeto válido, salimos sin renderizar nada.
+    if (!product) return null; 
+    // ------------------------------------------
+
     const formattedPrice = product.price.toLocaleString('es-CL', {
         style: 'currency',
         currency: 'CLP',
@@ -13,6 +18,13 @@ const ProductCard = ({ product, onAddToCart }) => {
 
     const detailUrl = `/products/${product.id}`;
     const isAvailable = product.stock > 0; // Verifica stock
+
+    // Lógica de protección para el botón
+    const handleAddToCart = () => {
+        if (isAvailable) {
+            onAddToCart(product, 1);
+        }
+    };
 
     return (
         <Card className="shadow-lg border-0 h-100 d-flex flex-column transition duration-300 hover:scale-[1.02] hover:shadow-xl rounded-xl">
@@ -42,7 +54,7 @@ const ProductCard = ({ product, onAddToCart }) => {
                     <span className="badge bg-danger text-uppercase mb-2 self-start">Oferta!</span>
                 )}
                 
-                {/* Solución al Error de Hidratación */}
+                {/* Solución al Error de Hydration: as="div" */}
                 <Card.Text as="div" className="text-sm text-gray-600 flex-grow-1"> 
                     <small className="text-muted">{product.category}</small>
                     <div className="mt-1 line-clamp-2">{product.description}</div>
@@ -54,9 +66,7 @@ const ProductCard = ({ product, onAddToCart }) => {
                 <div className="d-grid gap-2 mt-2">
                     <Button 
                         variant="primary" 
-                        // --- ¡ESTA ES LA LÓGICA DE PROTECCIÓN! ---
-                        // Solo llama a onAddToCart si isAvailable es TRUE
-                        onClick={() => { if (isAvailable) onAddToCart(product, 1); }}
+                        onClick={handleAddToCart} // Usa la función con protección de stock
                         className="btn-block rounded-lg shadow-md font-semibold"
                         disabled={!isAvailable} // Deshabilita visualmente
                     >
