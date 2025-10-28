@@ -11,3 +11,10 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+/* --- REGLA PARA LIMITAR TAMAÑO DE IMAGEN --- */
+/* Limita la altura de las imágenes dentro de las tarjetas de producto */
+.card-img-top {
+    height: 200px; /* Puedes ajustar este valor (ej. 180px, 220px) */
+    object-fit: cover; /* Asegura que la imagen cubra sin deformarse */
+    width: 100%; /* Ocupa el ancho de la tarjeta */
+}
